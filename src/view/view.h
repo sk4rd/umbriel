@@ -452,6 +452,9 @@ namespace umbriel {
     void cancelPositionAnimation();
     void snapPosition(int x, int y);
     void animateFadeTo(float toAlpha, int durationMs, const AnimationCurve& curve);
+    // Fully faded in, or on its way there. cancelFadeAnimation() rests the fade at 1 even for a window hidden at alpha
+    // 0, so the target alone does not tell.
+    bool fadedIn() const { return m_fade.target() >= 1.0 && (m_fade.animating() || m_fadeAlpha >= 1.0F); }
     const ViewPresentation& presentation() const { return m_presentation; }
     // Size/position to the full output and drop tile clips (exclusive zones do not apply).
     void applyFullscreenLayout(bool animate = false);

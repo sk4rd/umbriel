@@ -447,6 +447,7 @@ namespace umbriel {
       }
       View* view = entry.view;
       if (presents(*state, view)) {
+        const bool wasOnShow = view->fadedIn();
         view->setOnActiveWorkspace(true);
         view->enterForeignOutput(output);
         std::erase(m_hidingViews, view);
@@ -468,9 +469,11 @@ namespace umbriel {
             );
           }
         }
-        if (animate) {
+        // Retargeting a fade already heading to 1 restarts it, which replays a custom animation on a window that
+        // never left the screen.
+        if (!wasOnShow && animate) {
           view->animateFadeTo(1.0F, scratchpad.durationMs, scratchpad.curve);
-        } else {
+        } else if (!wasOnShow) {
           view->cancelFadeAnimation();
           view->setFadeAlpha(1.0F);
         }
