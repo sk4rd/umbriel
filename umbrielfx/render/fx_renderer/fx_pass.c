@@ -799,8 +799,9 @@ static void draw_animation_texture(
     const struct fx_animation_parameters* parameters, const struct wlr_box* box, const struct wlr_box* source_box,
     const struct wlr_box* logical_box, int expand, const struct fx_effect_geometry* geometry,
     const float* corner_radius, const float* pointer, const struct fx_cursor_path* pointer_path, const float* audio,
-    enum wl_output_transform transform, const pixman_region32_t* clip, struct wlr_texture* previous_texture,
-    const struct wlr_box* previous_source_box, const float projection[9], bool blend, bool mark_updated
+    const float* output_rect, enum wl_output_transform transform, const pixman_region32_t* clip,
+    struct wlr_texture* previous_texture, const struct wlr_box* previous_source_box, const float projection[9],
+    bool blend, bool mark_updated
 ) {
   TRACY_BOTH_ZONES_START(pass->buffer->renderer);
   struct fx_texture* texture = fx_get_texture(wlr_texture);
@@ -865,6 +866,11 @@ static void draw_animation_texture(
       shader->expand, logical_box->width > 0 ? (float)expand / logical_box->width : 0.0F,
       logical_box->height > 0 ? (float)expand / logical_box->height : 0.0F
   );
+  struct fx_uniform placed = {.name = "umbriel_output_rect", .type = FX_UNIFORM_VEC4, .count = 1};
+  if (output_rect != NULL) {
+    memcpy(placed.floats, output_rect, 4 * sizeof(*output_rect));
+  }
+  fx_effect_shader_bind_uniform(shader, &placed);
   // Uniforms persist on a shared program, so a draw without geometry binds no hole.
   if (shader->kind == FX_EFFECT_BORDER) {
     static const struct fx_effect_geometry no_hole = {0};
@@ -1196,6 +1202,19 @@ static enum wlr_color_transfer_function linear_sdr_tf(const struct fx_gles_rende
 
 // Renders the slot's program a second time into the emission texture, then
 // thresholds it into level 0 and blurs the pyramid. Restores the pass target.
+// umbriel_output_rect: `logical_box` as fractions of the composite's output, or zero without one.
+static void
+output_rect_of(const struct fx_effect_composite* composite, const struct wlr_box* logical_box, float rect[4]) {
+  if (composite->output_width <= 0 || composite->output_height <= 0) {
+    memset(rect, 0, 4 * sizeof(*rect));
+    return;
+  }
+  rect[0] = (float)logical_box->x / (float)composite->output_width;
+  rect[1] = (float)logical_box->y / (float)composite->output_height;
+  rect[2] = (float)logical_box->width / (float)composite->output_width;
+  rect[3] = (float)logical_box->height / (float)composite->output_height;
+}
+
 static void emit_light(
     struct fx_gles_render_pass* pass, const struct fx_effect_composite* composite, struct wlr_texture* texture,
     const struct wlr_box* source_box, struct wlr_texture* previous_texture, const struct wlr_box* previous_box,
@@ -1224,9 +1243,11 @@ static void emit_light(
   float projection[9];
   matrix_projection(projection, box->width, box->height, WL_OUTPUT_TRANSFORM_FLIPPED_180);
   const struct wlr_box local = {.width = box->width, .height = box->height};
+  float output_rect[4];
+  output_rect_of(composite, logical_box, output_rect);
   draw_animation_texture(
       pass, texture, composite->shader, composite->parameters, &local, source_box, logical_box, composite->expand,
-      geometry, composite->corner_radius, composite->pointer, composite->pointer_path, composite->audio,
+      geometry, composite->corner_radius, composite->pointer, composite->pointer_path, composite->audio, output_rect,
       composite->transform, NULL, previous_texture, previous_box, projection, false, false
   );
   // 2. Threshold into level 0 (half resolution, margin around).
@@ -1309,6 +1330,8 @@ static void effect_composite(
   const float* corner_radius = composite->corner_radius;
   const struct wlr_box* box = &composite->box;
   const struct wlr_box* logical_box = &composite->logical_box;
+  float output_rect[4];
+  output_rect_of(composite, logical_box, output_rect);
   // The hole is relative to the node box; the drawn box grew by `expand`.
   struct fx_effect_geometry shifted;
   const struct fx_effect_geometry* geometry = NULL;
@@ -1393,8 +1416,8 @@ static void effect_composite(
       }
       draw_animation_texture(
           pass, texture, shader, parameters, &history_box, source_box, logical_box, expand, geometry, corner_radius,
-          composite->pointer, composite->pointer_path, composite->audio, transform, history_clip_ptr, previous_texture,
-          previous_texture != NULL ? &previous_box : NULL, history_projection, false, false
+          composite->pointer, composite->pointer_path, composite->audio, output_rect, transform, history_clip_ptr,
+          previous_texture, previous_texture != NULL ? &previous_box : NULL, history_projection, false, false
       );
       if (history_clip_ptr != NULL) {
         pixman_region32_fini(&history_clip);
@@ -1435,8 +1458,9 @@ static void effect_composite(
 fallback:
   draw_animation_texture(
       pass, texture, shader, parameters, box, source_box, logical_box, expand, geometry, corner_radius,
-      composite->pointer, composite->pointer_path, composite->audio, transform, output_clip, previous_texture,
-      previous_texture != NULL ? &previous_box : NULL, pass->projection_matrix, !composite->replace, true
+      composite->pointer, composite->pointer_path, composite->audio, output_rect, transform, output_clip,
+      previous_texture, previous_texture != NULL ? &previous_box : NULL, pass->projection_matrix, !composite->replace,
+      true
   );
   if (composite->light != NULL) {
     emit_light(
@@ -1630,7 +1654,7 @@ bool fx_render_pass_end_animation_shadow(
   glUseProgram(horizontal->program);
   glUniform2f(glGetUniformLocation(horizontal->program, "shadow_step"), softness / (8.0F * full.width), 0);
   draw_animation_texture(
-      pass, caster, horizontal, &params, &reduced, &full, &full, 0, NULL, NULL, NULL, NULL, NULL,
+      pass, caster, horizontal, &params, &reduced, &full, &full, 0, NULL, NULL, NULL, NULL, NULL, NULL,
       WL_OUTPUT_TRANSFORM_NORMAL, NULL, NULL, NULL, pass->projection_matrix, true, true
   );
   struct wlr_texture* blurred = pop_animation_capture(pass);
@@ -1651,7 +1675,7 @@ bool fx_render_pass_end_animation_shadow(
   glBindTexture(GL_TEXTURE_2D, fx_get_texture(caster)->tex);
   glUniform1i(glGetUniformLocation(vertical->program, "shadow_mask"), 1);
   draw_animation_texture(
-      pass, blurred, vertical, &params, &full, &reduced, &reduced, 0, NULL, NULL, NULL, NULL, NULL,
+      pass, blurred, vertical, &params, &full, &reduced, &reduced, 0, NULL, NULL, NULL, NULL, NULL, NULL,
       WL_OUTPUT_TRANSFORM_NORMAL, clip, NULL, NULL, pass->projection_matrix, true, true
   );
   glActiveTexture(GL_TEXTURE1);

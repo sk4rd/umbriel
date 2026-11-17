@@ -112,6 +112,8 @@ struct fx_effect_composite {
   const float* pointer;                      // umbriel_pointer, uv in the drawn box; NULL unless a cursor kind
   const struct fx_cursor_path* pointer_path;
   const float* audio; // bands followed by availability; NULL supplies zero
+  // Logical size of the output logical_box is relative to, for umbriel_output_rect; zero when there is none.
+  int output_width, output_height;
 };
 
 // Pops the capture begun by fx_render_pass_begin_animation and draws it

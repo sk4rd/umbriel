@@ -25,6 +25,7 @@ static const char kPreamble[] =
     "uniform sampler2D umbriel_previous_texture;\n"
     "uniform mat3 umbriel_previous_sample_matrix;\n"
     "uniform vec2 umbriel_size;\n"
+    "uniform vec4 umbriel_output_rect;\n"
     "uniform float umbriel_scale;\n"
     "uniform float umbriel_time;\n"
     "uniform sampler2D umbriel_audio_bands;\n"
