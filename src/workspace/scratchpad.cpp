@@ -488,8 +488,12 @@ namespace umbriel {
         const bool alreadyHidden = view->presentedOpacity() <= kFadedOutOpacity
             && std::ranges::find(m_hidingViews, view) == m_hidingViews.end();
         if (animate && !alreadyHidden) {
-          view->setNodeEnabled(true);
-          view->animateFadeTo(0.0F, scratchpad.durationMs, scratchpad.curve);
+          // Retargeting a fade already heading to 0 restarts it, which replays a custom animation on a window
+          // halfway out.
+          if (!view->fadingOut()) {
+            view->setNodeEnabled(true);
+            view->animateFadeTo(0.0F, scratchpad.durationMs, scratchpad.curve);
+          }
           if (std::ranges::find(m_hidingViews, view) == m_hidingViews.end()) {
             m_hidingViews.push_back(view);
           }
