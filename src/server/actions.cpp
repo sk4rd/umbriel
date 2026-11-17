@@ -2128,6 +2128,22 @@ namespace umbriel {
       return scratchpad != nullptr && scratchpad->showStep(*name, Direction, output);
     }
 
+    bool actionScratchpadWindowToggle(Server& server, const Keybind& bind, std::string* error) {
+      const auto* arg = payloadIf<WindowIdArg>(bind);
+      if (arg == nullptr || arg->id.empty()) {
+        return reject(error, "scratchpad-window-toggle requires a window id");
+      }
+      const auto target = placementTarget(server, arg->id);
+      if (!target.has_value()) {
+        return reject(error, target.error());
+      }
+      ScratchpadManager* scratchpad = server.scratchpadManager();
+      if (scratchpad == nullptr || !scratchpad->contains(*target)) {
+        return reject(error, "window " + arg->id + " is not in a scratchpad");
+      }
+      return scratchpad->toggleWindow(*target, server.outputFromWlr(server.preferredOutput()));
+    }
+
     bool actionRestoreFromScratchpad(Server& server, const Keybind& bind, std::string* error) {
       const auto name = scratchpadName(server, bind, error);
       if (!name) {
@@ -2434,6 +2450,7 @@ namespace umbriel {
         &actionColumnTabBar<0>,
         &actionScratchpadWindowShowStep<1>,
         &actionScratchpadWindowShowStep<-1>,
+        &actionScratchpadWindowToggle,
         &actionLayoutToggleSplit,
         &actionOutputSdrWhite,
         &actionWindowSetRegion,

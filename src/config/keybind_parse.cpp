@@ -461,6 +461,8 @@ namespace umbriel {
          KeybindAction::ScratchpadWindowShowNext, ActionArgKind::OptionalScratchpad},
         {"scratchpad-window-show-previous", "[<scratchpad>]", "Show only the previous scratchpad window",
          KeybindAction::ScratchpadWindowShowPrevious, ActionArgKind::OptionalScratchpad},
+        {"scratchpad-window-toggle", "<window-id>", "Show or hide one scratchpad window, leaving the rest",
+         KeybindAction::ScratchpadWindowToggle, ActionArgKind::WindowId},
         {"screencast-clear", "", "Pause the screencast and stop following", KeybindAction::ScreenCastClear},
         {"screencast-follow-output", "", "Follow the focused output", KeybindAction::ScreenCastFollowOutput},
         {"screencast-follow-stop", "", "Stop following and keep the current target",

@@ -211,6 +211,7 @@ namespace umbriel {
     ColumnHideTabBar,
     ScratchpadWindowShowNext,
     ScratchpadWindowShowPrevious,
+    ScratchpadWindowToggle,
     LayoutToggleSplit,
     OutputSdrWhite,
     WindowSetRegion,

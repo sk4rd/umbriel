@@ -42,9 +42,23 @@ You can also press `Mod+Space` before opening any windows, then use your normal 
 - Pressing again hides that window and shows the next or previous one, wrapping at the ends.
 - When `scratchpad-toggle` is showing every window, either action keeps only the window after or before the focused one.
 - `scratchpad-toggle` hides the scratchpad whichever way it was shown.
-- A window moved into the scratchpad while it shows one window becomes the one on show, as does one a `default_focused` rule brings in. Closing or restoring the window on show hides the scratchpad.
+- A window moved into the scratchpad while it shows only some of its windows becomes the one on show, as does one a `default_focused` rule brings in. Closing or restoring the last window on show hides the scratchpad.
 
 Both styles work on the same scratchpad, so each binding can pick the one it wants.
+
+## Some windows at a time
+
+`scratchpad-window-toggle <window-id>` shows or hides a single member and leaves the others as they are, so two windows of one scratchpad can be summoned independently and still share the screen. Members that stay on show do not play the show animation again. Take the ID from `umbriel windows --json`; a script bound to a key can look it up by `app_id`:
+
+```sh
+id=$(umbriel windows --json | jq -r '.[] | select(.app_id == "notes") | .id')
+umbriel msg scratchpad-window-toggle "$id"
+```
+
+- On a hidden scratchpad, it shows only the named window.
+- On a visible scratchpad, it adds a hidden window to the ones on show, or hides one on show while the rest stay.
+- Hiding the last window on show hides the scratchpad.
+- The `[<scratchpad>]` actions above work on the same pad: `scratchpad-toggle` hides it however it was shown, and the step actions keep a single window.
 
 ## Named scratchpads
 
@@ -139,6 +153,7 @@ Only losing the last window hides the pad. An empty pad you open explicitly stay
 | `scratchpad-focus-next [<scratchpad>]`           | Focus the next visible member.                                                                                                             |
 | `scratchpad-window-show-next [<scratchpad>]`     | Show only the next member, hiding the one on show.                                                                                         |
 | `scratchpad-window-show-previous [<scratchpad>]` | Show only the previous member, hiding the one on show.                                                                                     |
+| `scratchpad-window-toggle <window-id>`           | Show or hide one member, leaving the others as they are.                                                                                   |
 
 The argument is optional only for the implicit `default` scratchpad. Restore and focus-next require the scratchpad to be visible.
 

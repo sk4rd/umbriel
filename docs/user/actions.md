@@ -199,15 +199,16 @@ For Xwayland windows, fullscreen entered with `window-toggle-fullscreen` remains
 
 Scratchpads are global named holding areas that roam between outputs. [Scratchpads](scratchpad.md) covers their configuration, restoration rules, and multi-output behavior.
 
-| Action                                           | Effect                                            |
-| ------------------------------------------------ | ------------------------------------------------- |
-| `scratchpad-focus-next [<scratchpad>]`           | Focus the next visible scratchpad window          |
-| `scratchpad-toggle [<scratchpad>]`               | Show or hide the selected scratchpad windows      |
-| `scratchpad-window-show-next [<scratchpad>]`     | Show only the next scratchpad window              |
-| `scratchpad-window-show-previous [<scratchpad>]` | Show only the previous scratchpad window          |
-| `window-move-to-scratchpad [<scratchpad>]`       | Move the focused window into a scratchpad         |
-| `window-restore-from-scratchpad [<scratchpad>]`  | Return a scratchpad window to its saved workspace |
-| `window-toggle-scratchpad [<scratchpad>]`        | Move the focused window to or from a scratchpad   |
+| Action                                           | Effect                                               |
+| ------------------------------------------------ | ---------------------------------------------------- |
+| `scratchpad-focus-next [<scratchpad>]`           | Focus the next visible scratchpad window             |
+| `scratchpad-toggle [<scratchpad>]`               | Show or hide the selected scratchpad windows         |
+| `scratchpad-window-show-next [<scratchpad>]`     | Show only the next scratchpad window                 |
+| `scratchpad-window-show-previous [<scratchpad>]` | Show only the previous scratchpad window             |
+| `scratchpad-window-toggle <window-id>`           | Show or hide one scratchpad window, leaving the rest |
+| `window-move-to-scratchpad [<scratchpad>]`       | Move the focused window into a scratchpad            |
+| `window-restore-from-scratchpad [<scratchpad>]`  | Return a scratchpad window to its saved workspace    |
+| `window-toggle-scratchpad [<scratchpad>]`        | Move the focused window to or from a scratchpad      |
 
 ## Workspaces
 

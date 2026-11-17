@@ -60,8 +60,8 @@ namespace umbriel {
     std::string_view activeOn(const Output* output) const;
     void deactivateOn(const Output* output);
     bool refocusActive(Output* output);
-    // Show a scratchpad on the invoking output without changing keyboard focus. Naming `member` while the pad shows a
-    // single window shows that member instead.
+    // Show a scratchpad on the invoking output without changing keyboard focus. Naming `member` while the pad shows
+    // only some of its windows shows that member instead.
     bool summon(std::string_view name, Output* invokingOutput, View* member = nullptr);
     bool toggle(std::string_view name, Output* invokingOutput);
     void hideAll();
@@ -71,6 +71,9 @@ namespace umbriel {
     // Show one window of the scratchpad at a time: the one after (`direction` > 0) or before the window on show,
     // wrapping at the ends. A hidden pad shows its most recently focused window.
     bool showStep(std::string_view name, int direction, Output* invokingOutput);
+    // Show `view`'s member of its scratchpad alongside the members already on show, or hide it while the rest stay.
+    // Showing it on a hidden pad shows it by itself; hiding the last member on show hides the pad.
+    bool toggleWindow(View* view, Output* invokingOutput);
     View* focused(std::string_view name) const;
     bool hasFocus(std::string_view name) const;
     // The most recently focused window when that focus went to a scratchpad
@@ -110,13 +113,16 @@ namespace umbriel {
       bool visible = false;
       bool active = false;
       View* lastFocused = nullptr;
-      // While visible, the one member shown in place of all of them; null when every member shows.
-      View* solo = nullptr;
+      // While visible, the members shown in place of all of them; empty when every member shows.
+      std::vector<View*> shown;
       std::optional<PendingSpawn> pendingSpawn;
       // Set only while an output disappearance has temporarily parked this
       // scratchpad elsewhere.
       std::string displacedOutput;
       std::optional<wlr_box> usableArea;
+
+      // Drops `view` from `shown`. True when it was the last window shown, so keeping the pad up would reveal the rest.
+      bool dropShown(const View* view) { return std::erase(shown, view) > 0 && shown.empty(); }
     };
 
     struct Entry {
@@ -144,6 +150,8 @@ namespace umbriel {
     static bool presents(const Scratchpad& scratchpad, const View* view);
     // Whether `view` is a dialog of another member of scratchpad `name`, shown along with that member.
     bool ridesWithParent(const View* view, std::string_view name) const;
+    // The mapped members of scratchpad `name` that show or hide on their own, in entry order: dialogs ride with theirs.
+    std::vector<View*> steps(std::string_view name) const;
     // The regular member of scratchpad `name` that `view` belongs to: `view` itself, or for a dialog the member it was
     // opened from.
     View* memberFor(View* view, std::string_view name) const;

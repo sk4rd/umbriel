@@ -106,4 +106,20 @@ if ((green < 230)); then
   exit 1
 fi
 
-echo "a member that stayed on show kept its fade at rest while another hid: red=$red green=$green"
+# Toggling red back in beside green leaves green at rest while red fades in.
+"$UMBRIEL" clock-advance 2000
+"$UMBRIEL" msg scratchpad-window-toggle "$(window_of pad-red | jq -r .id)" > /dev/null
+"$UMBRIEL" clock-advance 300
+grim "$FRAME"
+red=$(channel pad-red 1)
+green=$(channel pad-green 2)
+if ((red < 10 || red > 200)); then
+  echo "red should be part way through its show 300 ms in: red=$red"
+  exit 1
+fi
+if ((green < 230)); then
+  echo "green stayed on show while red was toggled in, but its scratchpad animation started again: green=$green"
+  exit 1
+fi
+
+echo "members that stayed on show kept their fade at rest while others hid or showed: red=$red green=$green"
